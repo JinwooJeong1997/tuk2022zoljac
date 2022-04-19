@@ -16,13 +16,25 @@ def raw_to_jpg(name):
     except Exception as e:
         print(e)
         raw = cv2.imread(name,cv2.IMREAD_UNCHANGED)
-        dst = cv2.resize(raw,dsize=(6024,4024),interpolation=cv2.INTER_LINEAR)
+        dst = remove_shadow(raw)
+        dst = cv2.resize(dst,dsize=(6024,4024),interpolation=cv2.INTER_LINEAR)
         
-        #dst = cv2.bitwise_not(dst)
+        #dst = cv2.fastNlMeansDenoisingColored(dst,None,7,7,7,21)
+        imageio.imsave('detect/sample_denoise.jpg', dst)
+        
+        dst = cv2.normalize(dst,None,0,255,cv2.NORM_MINMAX)
         dst = contrast(dst)
+        k = cv2.getStructuringElement(cv2.MORPH_RECT,(5,5))
+        dst = cv2.morphologyEx(dst,cv2.MORPH_OPEN,k)
+        dst = cv2.medianBlur(dst,3)
+        dst = cv2.bilateralFilter(dst,-1,10,5)
+        dst = cv2.bitwise_not(dst)
+        
+        
+        
+        #detect_circle(dst)
         im = np.array(dst)
         rgb = np.float32(im)
-    
     print(type(im))
     print(im)
     h,w,c = rgb.shape
@@ -30,6 +42,31 @@ def raw_to_jpg(name):
     rgb = np.asarray(rgb, np.uint8)
     imageio.imsave('detect/sample.jpg', rgb)
     return rgb
+
+#원 검출
+def detect_circle(img):
+    cir_img = cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
+    circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 20,param1=50,param2=25,minRadius=0, maxRadius=0)
+    circles = np.uint16(np.around(circles))
+    for i in circles[0,:]:
+        cv2.circle(cir_img,(i[0],i[1]),i[2],(0,255,0),2)
+    imageio.imsave('detect/sample_circle.jpg',cir_img)
+
+#그림자 제거
+def remove_shadow(img):
+    rgb_planes = cv2.split(img)
+    result_planes = []
+    result_norm_planes = []
+    for plane in rgb_planes:
+        dilated_img = cv2.dilate(plane, np.ones((7,7), np.uint8))
+        bg_img = cv2.medianBlur(dilated_img, 21)
+        diff_img = 255 - cv2.absdiff(plane, bg_img)
+        norm_img = cv2.normalize(diff_img,None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
+        result_planes.append(diff_img)
+        result_norm_planes.append(norm_img)
+
+    result = cv2.merge(result_planes)
+    return result
 
 #대비조절 함수
 def contrast(img):
@@ -347,7 +384,7 @@ def wrap(img,matrix):
     return dst
 
 def thresholding(img):
-    ret,thr=cv2.threshold(img,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    ret,thr=cv2.threshold(img,0,255,cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     imageio.imsave('detect/sample_thr.jpg', thr)
     return thr
 

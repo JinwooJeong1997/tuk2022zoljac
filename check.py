@@ -44,7 +44,6 @@ def circle_analy( name):
 
 
 
-
 img=cv2.imread('img/n0.png')
 gray = h.grayscale(img)
 

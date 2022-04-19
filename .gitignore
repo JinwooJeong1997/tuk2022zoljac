@@ -20,6 +20,13 @@
 *.data
 *.json
 
+!0_0.jpg
+!90_0.jpg
+!green.jpg
+!red.png
+!tool_1.png
+!tool.png
+
 *.cfg
 !cfg/yolov3*.cfg
 
@@ -39,6 +46,9 @@ data/*
 pycocotools/*
 results*.txt
 gcp_test*.sh
+
+# test/detect folder
+outputs/detect*
 
 # Datasets -------------------------------------------------------------------------------------------------------------
 coco/
