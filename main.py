@@ -50,7 +50,7 @@ class Main(QObject):
 
     def _connectSignals(self):
         self.gui.start.clicked.connect(self.calc.OnOpenDocument)
-        self.calc.sig.connect(self.gui.show_img)
+        self.calc.sig2.connect(self.gui.show_img)
         self.gui.camera_info.clicked.connect(self.camera.camera)
         self.gui.server_info.clicked.connect(self.server.server)
         self.gui.HB_Val.currentIndexChanged.connect(self.gui.change_HB)

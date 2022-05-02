@@ -29,7 +29,7 @@ def raw_to_jpg(name):
         dst = cv2.medianBlur(dst,3)
         dst = cv2.bilateralFilter(dst,-1,10,5)
         dst = cv2.bitwise_not(dst)
-        
+        #dst = contrast(dst)
         
         
         #detect_circle(dst)
