@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import  QWidget,QMessageBox,QFileDialog
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 import configparser
 import time
+from datetime import timedelta
 import cv2
 import header as h
 import Classification as c
@@ -14,7 +15,7 @@ import serial
 
 # 시리얼 포트 연결
 port = "COM3"
-baud = 9600
+baud = 115200
 ser = serial.Serial(port,baud,timeout=1)
 
 
@@ -24,7 +25,7 @@ ser = serial.Serial(port,baud,timeout=1)
 
 class Circle(QWidget):
     sig=pyqtSignal(str,int,int,int,str)
-    sig2=pyqtSignal(str,bool,float)
+    sig2=pyqtSignal(str,bool,float,int,str)
     
     def __init__(self,parent=None):
         super(self.__class__, self).__init__(parent)
@@ -97,7 +98,11 @@ class Circle(QWidget):
         h.region_of_interest_mamo(self.x,output_path)
         matter_loc,arr=c.classifcation(output_path)
         h.image_change(matter_loc,self.x,output_path)
-        m = str(max(arr))
+        if len(arr) > 0 :
+            m = str(max(arr))
+        else :
+            m = str("0")
+        
         circle = configparser.ConfigParser()
         circle['INFO'] = {}
         circle['INFO']['반지름'] = str(int(self.T_radius)) + 'cm'
@@ -109,34 +114,31 @@ class Circle(QWidget):
         with open(output_path+'/circle.ini', 'w', encoding='utf-8') as configfile:
             circle.write(configfile)
 
-        isgood = False
-        
+        isgood = True
         
         
         restime = 100.0
         
-        
-        
-        if len(matter_loc) > 0  or  m >= 90 : #이물질존재, 마모도90이상
+        if len(matter_loc) > 0  or  int(m) >= 90 : #이물질존재, 마모도90이상
             isgood = False
         
+        start = time.perf_counter()
         if isgood is False :
             #print("defect!")
             #alarm
-            
-            start = time.time()
-            ser.write(b'a')
-            data=ser.readline().decode('ascii')
-            end = time.time()
-            resttime = end - start
+            ser.write('a'.encode())
         else :
-            start = time.time()
-            ser.write(b'b')
-            data=ser.readline().decode('ascii')
-            end = time.time()
-            resttime = end - start
+            ser.write('b'.encode())
             
-        resttime = round(resttime,5)
-        resttime = resttime * 1000
+        response = ser.readline()
+        print(response[:len(response)-1].decode())
+        end = time.perf_counter()
+        
+        
+        resttime = end-start
+        print("{}".format(round(resttime,4)))
+        print("{}".format(timedelta(seconds=end-start)))
+        resttime = round(resttime,4)
+        #resttime = resttime
        #self.sig.emit(output_path,int(self.T_radius),int(rotate),int(uniq),str(m))
-        self.sig2.emit(output_path,bool(isgood),float(resttime))
+        self.sig2.emit(output_path,bool(isgood),float(resttime),int(uniq),str(m))

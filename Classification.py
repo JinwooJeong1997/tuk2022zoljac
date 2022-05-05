@@ -36,8 +36,15 @@ def classifcation(p):
             print('완료')
             number+=1
     else: print('None')
-
-    yd.detect(source='./'+p+'/matter', project='./'+p+'/matter')
+    
+    dir = os.listdir(p+'/matter')
+    #print(dir)
+    if(len(dir)==0):
+        print("{}/matter None".format(dir))
+    else:
+        yd.detect(source='./'+p+'/matter', project='./'+p+'/matter')
+    
+        
     arr=yd.detect1(source='./'+p+'/mamo', project='./'+p+'/mamo')
     ar=[]
     ar1=[]

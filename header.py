@@ -35,8 +35,8 @@ def raw_to_jpg(name):
         #detect_circle(dst)
         im = np.array(dst)
         rgb = np.float32(im)
-    print(type(im))
-    print(im)
+    #print(type(im))
+    #print(im)
     h,w,c = rgb.shape
     print("{} {} {}".format(h,w,c))
     rgb = np.asarray(rgb, np.uint8)

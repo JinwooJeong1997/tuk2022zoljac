@@ -1,6 +1,10 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets, QtPrintSupport
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import pyqtSlot,Qt
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtGui import QPixmap, QScreen , QImage
+import sys
+from time import time ,sleep
 
 #메인 윈도우 생성,관리
 
@@ -11,6 +15,7 @@ class Ui_MainWindow(QWidget): #메인 UI 세팅 클래스
         MainWindow.resize(1000, 900)
         MainWindow.setStyleSheet("background-color: #ffffff")
         MainWindow.setMaximumSize(QtCore.QSize(1000,900))
+        
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout_2 = QtWidgets.QGridLayout(self.centralwidget)
@@ -264,8 +269,13 @@ class Ui_MainWindow(QWidget): #메인 UI 세팅 클래스
         self.acttime = QtWidgets.QLabel(self.error_box)
         self.acttime.setFont(font)
         self.acttime.setObjectName("acttime")
-        self.gridLayout_11.addWidget(self.acttime, 0, 0, 1, 1)
-        self.gridLayout_4.addLayout(self.gridLayout_11, 1, 0, 1, 1)
+        self.gridLayout_11.addWidget(self.acttime, 0, 0, 1, 3)
+        
+        #self.timenum = QtWidgets.QLabel(self.error_box)
+        #self.timenum.setFont(font)
+        #self.timenum.setObjectName("timenum")
+        #self.gridLayout_11.addWidget(self.timenum, 0, 1, 1, 2)
+        
         self.gridlayout.addWidget(self.error_box, 0, 1, 1, 1)
         
         self.img = QtWidgets.QLabel(self.centralwidget)
@@ -460,6 +470,7 @@ class Ui_MainWindow(QWidget): #메인 UI 세팅 클래스
         #self.matter.setText(_translate("MainWindow", "<html><head/><body><p align=\"left\"><span style=\" font-size:25pt;\">기  공</span></p></body></html>"))
         self.ng_good.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:45pt;\">NG / GOOD</span></p></body></html>"))
         self.acttime.setText(_translate("MainWindow", "-time"))
+        
         self.name.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\">절단봉 불량 검출</p><p align=\"center\">프로그램</p></body></html>"))
         pixmap = QtGui.QPixmap('img/logo.PNG')
         pixmap = pixmap.scaledToWidth(120)
@@ -511,21 +522,32 @@ class Ui_MainWindow(QWidget): #메인 UI 세팅 클래스
         self.wear.setText('{}'.format(mamo))
         self.cut_num.setText('{}'.format(num))
 
-    @pyqtSlot(str,bool,float)
-    def show_img(self,p,isdefect,time):
+    @pyqtSlot(str,bool,float,int,str)
+    def show_img(self,p,isdefect,time,num,mamo):
         pixmap_m = QtGui.QPixmap(p+'/matter.jpg')
         pixmap_m = pixmap_m.scaledToWidth(540)
         self.img.setPixmap(pixmap_m)
         _translate = QtCore.QCoreApplication.translate
         if isdefect == True :
             self.ng_good.setStyleSheet("background-color: #00ff00")
-            #self.ng_good.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:45pt;\">NG / GOOD</span></p></body></html>"))
             self.ng_good.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:45pt;\">GOOD</span></p></body></html>"))
-            #self.ng_good.setText("good")
         else :
             self.ng_good.setStyleSheet("background-color: #ff0000")
             self.ng_good.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:45pt;\">NG</span></p></body></html>"))
-        self.acttime.setText('- timer : {} ms  '.format(time))    
+            
+        self.acttime.setText('- timer : {} ms  '.format(time))
+        self.wear.setText('{}'.format(mamo))
+        self.cut_num.setText('{}'.format(num))
+        
+        try:
+            pix = self.centralwidget.grab()
+            img = QImage(pix) 
+            img.save(p+"/capture.png")
+        except Exception as e:
+            print(e)
+            
+        
+        
     
     
     def change_HB(self):
