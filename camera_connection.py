@@ -17,14 +17,17 @@ def USB_camera():
 
         while(True):
             ret, frame = cap.read()    # Read 결과와 frame
-
+            
             if(ret) :
                 gray = cv2.cvtColor(frame,  cv2.COLOR_BGR2GRAY)    # 입력 받은 화면 Gray로 변환
-
                 cv2.imshow('frame_color', frame)    # 컬러 화면 출력
                 cv2.imshow('frame_gray', gray)    # Gray 화면 출력
                 if cv2.waitKey(1) == ord('q'):
                     break
+        print('save img')
+        file = "/detect/test.jpg"
+        cv2.imwrite(file,frame) 
+
         cap.release()
         cv2.destroyAllWindows()
 
@@ -57,3 +60,9 @@ def ETHERNET_camera():
         viewer = BaslerOpenCVViewer(camera)
         img=viewer._run_continuous_shot()
 
+        #save img
+        '''
+        print('save img')
+        file = datetime.datetime.now().strftime("%Y%m%d_%H%M%S%f")+".jpg"
+        cv2.imwrite(file,frame) 
+        '''

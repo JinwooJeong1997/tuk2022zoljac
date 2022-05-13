@@ -16,7 +16,7 @@ import serial
 # 시리얼 포트 연결
 port = "COM3"
 baud = 115200
-ser = serial.Serial(port,baud,timeout=1)
+#ser = serial.Serial(port,baud,timeout=1)
 
 
 #원 검출, 영상처리
@@ -122,23 +122,24 @@ class Circle(QWidget):
         if len(matter_loc) > 0  or  int(m) >= 90 : #이물질존재, 마모도90이상
             isgood = False
         
-        start = time.perf_counter()
-        if isgood is False :
+        
+        #start = time.perf_counter()
+        #if isgood is False :
             #print("defect!")
             #alarm
-            ser.write('a'.encode())
-        else :
-            ser.write('b'.encode())
+        #    ser.write('a'.encode())
+        #else :
+        #    ser.write('b'.encode())
             
-        response = ser.readline()
-        print(response[:len(response)-1].decode())
-        end = time.perf_counter()
+        #response = ser.readline()
+        #print(response[:len(response)-1].decode())
+        #end = time.perf_counter()
         
         
-        resttime = end-start
-        print("{}".format(round(resttime,4)))
-        print("{}".format(timedelta(seconds=end-start)))
-        resttime = round(resttime,4)
+        #resttime = end-start
+        #print("{}".format(round(resttime,4)))
+        #print("{}".format(timedelta(seconds=end-start)))
+        #resttime = round(resttime,4)
         #resttime = resttime
-       #self.sig.emit(output_path,int(self.T_radius),int(rotate),int(uniq),str(m))
-        self.sig2.emit(output_path,bool(isgood),float(resttime),int(uniq),str(m))
+        #self.sig.emit(output_path,int(self.T_radius),int(rotate),int(uniq),str(m))
+        self.sig2.emit(output_path,bool(isgood),float(0.0001),int(uniq),str(m))
