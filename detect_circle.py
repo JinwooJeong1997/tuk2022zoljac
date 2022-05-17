@@ -14,9 +14,9 @@ import detect as yd
 import serial
 
 # 시리얼 포트 연결
-port = "COM3"
+port = "COM3" # 아두이노 포트 확인하고 할것
 baud = 115200
-#ser = serial.Serial(port,baud,timeout=1)
+ser = serial.Serial(port,baud,timeout=1)
 
 
 #원 검출, 영상처리
@@ -122,24 +122,22 @@ class Circle(QWidget):
         if len(matter_loc) > 0  or  int(m) >= 90 : #이물질존재, 마모도90이상
             isgood = False
         
-        
-        #start = time.perf_counter()
-        #if isgood is False :
+        print("send_time :", time.time() - start)
+        send_start = time.perf_counter()
+        if isgood is False :
             #print("defect!")
             #alarm
-        #    ser.write('a'.encode())
-        #else :
-        #    ser.write('b'.encode())
+            ser.write('a'.encode())
+        else :
+            ser.write('b'.encode())
             
-        #response = ser.readline()
-        #print(response[:len(response)-1].decode())
-        #end = time.perf_counter()
-        
-        
-        #resttime = end-start
-        #print("{}".format(round(resttime,4)))
+        response = ser.readline()
+        print(response[:len(response)-1].decode())
+        print("recv_time :", time.time() - start)
+        end = time.perf_counter()
+        resttime = end-send_start
         #print("{}".format(timedelta(seconds=end-start)))
-        #resttime = round(resttime,4)
-        #resttime = resttime
-        #self.sig.emit(output_path,int(self.T_radius),int(rotate),int(uniq),str(m))
+        resttime = round(resttime,4)
+        print("ack : {} ms".format(round(resttime,4)))
+        self.sig.emit(output_path,int(self.T_radius),int(rotate),int(uniq),str(m))
         self.sig2.emit(output_path,bool(isgood),float(0.0001),int(uniq),str(m))

@@ -6,6 +6,7 @@
 # 2. D1000 write request (write 0-false-)
 # 3. D1004 read request  - read 4 words (MM DD HH mm) -> mkdir "MMDDHHmm"
 # 4. D1002 write request ( 1.ng 2.ok)
+# 16byte word -> swap ex) h 0012 -> 1200
 
 # packet = header + frame
 # header
@@ -15,14 +16,15 @@
 #   - CPU
 #   - H33 (1)
 #   - invokeID(2) - checksum for pc hmi error check , can set randomly
-#   - length (2) - frame length
+#   - length (2) - body length
 #   - reserve (1)
-#   - BCC
+#   - BCC - sum of header hex
 
 # request = header + inst + type + reserve(2) + data
 # ack = header + inst + type + reserve(2) + error(2)"h0000" + data
 # Nak = header + inst + type + reserve(2) + error(2)"not h0000" + errorcode(2)
 
+from base64 import decode
 from socket import *
 from select import *
 import sys
@@ -36,57 +38,113 @@ PORT = 2004
 BUFSIZE = 4096
 ADDR = (HOST, PORT)
 
+
 class xgt_header:
-    compID = "4C5349532D58474C" # LSIS-XGL
-    reserve = "0000" #fixed
-    plcInfo = "0000" #fiexd
-    cpuInfo = "A0" #xgk-a0 xgi-a4 xgr-a8
-    sourceOfFrame = "33" # cli->ser : 0x33 ser->cli : 0x11
-    invokeId = "0001" 
-    length = "1100"
-    FnetPos = "03"
-    bcc = "45" #header byte sum
-
-    def getHeader(self):
-        return self.compID+self.reserve+self.plcInfo+self.cpuInfo+self.sourceOfFrame+self.invokeId+self.length+self.FnetPos+self.bcc
-
-    #def setlength(self,data) :
-    #    length = hex(len(hex(data))-2)
-
-    #def setBCC(self) : #헤더값을 전부 더한 값의 2자리 값
-    #    bcc 
-
+    compID = 0x4C5349532D58474C # LSIS-XGL
+    reserve = 0x0000 #fixed
+    plcInfo = 0x0000 #fiexd
+    cpuInfo = 0xA0 #xgk-a0 xgi-a4 xgr-a8
+    sourceOfFrame = 0x33 # cli->ser : 0x33 ser->cli : 0x11
+    invokeId = 0x0001 
+    length = 0x1100
+    FnetPos = 0x03
+    bcc = 0x45 #header byte sum
+    
+    def get_packet(self):
+        buf = self.compID
+        #print("{}".format(hex(buf)))
+        buf = (buf * pow(16,4)) + self.reserve
+        #print("{}".format(hex(buf)))
+        buf = (buf * pow(16,4)) + self.plcInfo
+        #print("{}".format(hex(buf)))
+        buf = (buf * pow(16,2)) + self.cpuInfo
+        #print("{}".format(hex(buf)))
+        buf = (buf * pow(16,2)) + self.sourceOfFrame
+        #print("{}".format(hex(buf)))
+        buf = (buf * pow(16,4)) + self.invokeId
+        #print("{}".format(hex(buf)))
+        buf = (buf * pow(16,4)) + self.length
+        #print("{}".format(hex(buf)))
+        buf = (buf * pow(16,2)) + self.FnetPos
+        #print("{}".format(hex(buf)))
+        buf = (buf * pow(16,2)) + self.bcc
+        #print("{}".format(hex(buf)))
+        return buf
+    
+    #def set_length(self):
+    
+    def set_bcc(self): # BCC 계산 (필드 변경시 호출할것)
+        hexs =[hex(self.get_packet())[i:i+2] for i in range(2,len(hex(self.get_packet()))-2,2)]
+        print(hexs)
+        result = 0
+        for i in hexs :
+            #print("getbcc: {} + {}".format(hex(result),hex(int(i,16))))
+            interger = int(i,16)
+            result += interger
+        print(hex(result)[len(hex(result))-2:])
+        self.bcc = int(hex(result)[len(hex(result))-2:],16)
+    
+        
     
 
+    
 #프레임 작성 시 프레임에서 
 #16 진수 워드 데이터를 표현할 때는 숫자 앞의 h 를 빼고, 
 #두 바이트의 위치를 바꾸어 주어야 합니다.
 #예) h0054 ⇒5400
-
-class req_packet :
-    inst = "5400" #read req
-    dtype = "0200"
-    reserve = "0000"
+class xgt_body :
     # 블록수  : [변수길이][변수] h0001~h0010
     # 변수 길이(변수 이름 길이) h01~h10
     # datapos  : %(워드가능한 영역)W(위치)
-    datamount = "0100" # h0001
-    datalength = "0700" 
-    datapos = "25 44 57 31 30 30 30" # %DW1000
+    inst = 0x5400 #read req
+    dtype = 0x0200
+    reserve = 0x0000
+    datamount = 0x0100 # h0001
+    datalength = 0x0700 
+    datapos = 0x25445731303030 # %DW1000
     
-    def getPacket(self):
-        return self.inst+self.dtype+self.reserve+self.datamount+self.datalength+self.datapos
+    def get_packet(self):
+        buf = self.inst
+        #print("{}".format(hex(buf)))
+        buf = (buf * pow(16,4)) + self.dtype
+        #print("{}".format(hex(buf)))
+        buf = (buf * pow(16,4)) + self.reserve
+        #print("{}".format(hex(buf)))
+        buf = (buf * pow(16,4)) + self.datamount
+        #print("{}".format(hex(buf)))
+        buf = (buf * pow(16,4)) + self.datalength
+        #print("{}".format(hex(buf)))
+        buf = (buf * pow(16,14)) + self.datapos
+        #print("{}".format(hex(buf)))
+        return buf
+
+class xgt_packet:
+    header = xgt_header()
+    body = xgt_body()
+    
+    def get_packet(self):
+        buf = self.header.get_packet()
+        buf = (buf * pow(16,len(hex(self.body.get_packet()))-2)) + self.body.get_packet()
+        return buf
+    
 
 
 xgt_hd = xgt_header()
-xgt_req = req_packet()
-print("{}".format(xgt_hd.getHeader()))
-print("{}".format(xgt_req.getPacket()))
-print(("LSIS-XGT").encode('utf-8').hex())
-print(("%MW1000").encode('utf-8').hex())
-print(("%MW1000").encode('utf-8').hex())
+xgt_bd = xgt_body()
+xgt_pk = xgt_packet()
+#xgt_req = req_packet()
+xgt_hd.get_bcc()
+print("header : {} {} {}".format(hex(xgt_hd.get_packet()),type(xgt_hd.get_packet()),len(hex(xgt_hd.get_packet()))-2))
+print("body : {} {}".format(hex(xgt_bd.get_packet()),type(xgt_bd.get_packet())))
+print("packet : {} ".format(hex(xgt_pk.get_packet())))
+#byte_obj = bytes.fromhex(xgt_hd.get_header())
+#print("ascii : {}".format(byte_obj.decode("ASCII")))
+#print("{}".format(xgt_req.getPacket()))
+#print(("LSIS-XGT").encode('utf-8').hex())
+#print(("%MW1000").encode('utf-8').hex())
+#print(("%MW1000").encode('utf-8').hex())
 
-clientSocket = socket(AF_INET, SOCK_STREAM)  # 서버에 접속하기 위한 소켓을 생성한다.
+#clientSocket = socket(AF_INET, SOCK_STREAM)  # 서버에 접속하기 위한 소켓을 생성한다.
 def connect():  
     try:
         clientSocket.connect(ADDR)  # 서버에 접속을 시도한다.
@@ -98,25 +156,19 @@ def connect():
 
 def datarecv():
     #sendData = b'4C5349532D58475400000000A0330200110003405400020000000100070025445731303030'
-    xgt = xgt_hd.getHeader()+xgt_req.getPacket()                             
-    print(xgt)    
-    sendData =  b"4C5349532D58475400000000A0330000110003005400020000000100040025445731303031"
     print("send")
     #print(type(sendData))
     #print(sendData)
     #print(sendData.__sizeof__())
     #print(binascii.hexlify(sendData).decode("ascii"))
-    clientSocket.send(sendData)
+    clientSocket.sendall(hex(xgt_pk.get_packet()))
     recvData = clientSocket.recv(6000)
     print(type(recvData))
     print("recv")
     print(binascii.hexlify(recvData))
     print(recvData.__sizeof__())
 
+#connect()
+#datarecv()
 
-
-
-connect()
-datarecv()
-
-clientSocket.close()
+#clientSocket.close()
