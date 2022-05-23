@@ -156,7 +156,7 @@ stack-data==0.2.0
 tensorboard==2.8.0
 tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
-terminado==0.13.2
+terminado==0.15.0
 testpath==0.6.0
 tomli==2.0.1
 tomlkit==0.10.0
